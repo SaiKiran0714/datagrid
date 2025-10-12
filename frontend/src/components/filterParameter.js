@@ -59,16 +59,16 @@ export default function FilterParameter({
   return (
     <Box
       sx={{
-        mt: 1,
+        mt: { xs: 0.5, sm: 1 },
         // keep height constant whether chips exist or not
-        minHeight: 48,
-        maxHeight: 48,
+        minHeight: { xs: 40, sm: 48 },
+        maxHeight: { xs: 40, sm: 48 },
         display: "flex",
         alignItems: "center",
-        gap: 1,
-        px: 1,
+        gap: { xs: 0.5, sm: 1 },
+        px: { xs: 0.5, sm: 1 },
         borderRadius: 1,
-        bgcolor: "background.paper",
+        // bgcolor: "background.paper",
         overflow: "hidden",
       }}
     >
@@ -93,6 +93,7 @@ export default function FilterParameter({
             label={`Search: "${searchTerm}"`}
             color="primary"
             onDelete={onClearSearch}
+            sx={{ height: { xs: 24, sm: 28 } }}
           />
         )}
         {value.flatMap((f, i) => {
@@ -109,6 +110,7 @@ export default function FilterParameter({
                   else next.splice(i, 1);
                   onChange(next);
                 }}
+                sx={{ height: { xs: 24, sm: 28 } }}
               />
             ));
           }
@@ -118,13 +120,14 @@ export default function FilterParameter({
               size="small"
               label={formatChipLabel(f)}
               onDelete={() => removeAt(i)}
+              sx={{ height: { xs: 24, sm: 28 } }}
             />,
           ];
         })}
       </Box>
 
       {/* Single clear-all button pinned to the right within same container */}
-      <Button size="small" onClick={clearAll} disabled={value.length === 0}>
+      <Button size="small" onClick={clearAll} disabled={value.length === 0} sx={{ minWidth: { xs: 64, sm: 80 }, px: { xs: 1, sm: 1.5 } }}>
         Clear all
       </Button>
     </Box>

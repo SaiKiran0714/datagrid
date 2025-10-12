@@ -6,9 +6,33 @@
 	border-top: 4px solid #1976d2; /* primary color */
 	border-radius: 50%;
 	animation: agSpin 0.8s linear infinite;
-	margin: 24px auto;
+	margin: 8px auto 0;
+}
+/* Overlay container and label for clarity */
+.ag-my-overlay {
+	display: grid;
+	place-items: center;
+	padding: 16px 0 20px;
+}
+.ag-my-overlay .ag-my-label {
+	margin-top: 8px;
+	font-size: 13px;
+	color: #666;
 }
 
 @keyframes agSpin {
 	to { transform: rotate(360deg); }
+}
+
+/* Allow text selection inside AG Grid cells */
+.ag-root-wrapper, .ag-root, .ag-center-cols-container, .ag-cell {
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
+}
+
+/* Ensure AG Grid popups (filters, menus, rich selects) appear above scrollbars */
+.ag-popup, .ag-popup-editor, .ag-menu, .ag-rich-select, .ag-filter-wrapper {
+	z-index: 10010 !important;
 }

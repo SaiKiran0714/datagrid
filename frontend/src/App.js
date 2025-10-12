@@ -44,7 +44,19 @@ export default function App() {
       <CssBaseline />
       <AppBar position="static" color="default">
         <Toolbar>
-          <Typography component={Link} to="/" variant="h6" sx={{ color: "inherit",fontWeight:'bold', textDecoration: "none" , my:2, mx:3, padding: 0}}>
+          <Typography
+            component={Link}
+            to="/"
+            variant="h6"
+            sx={{
+              color: "inherit",
+              fontWeight: 'bold',
+              textDecoration: "none",
+              my: { xs: 1, sm: 2 },
+              mx: { xs: 1, sm: 3 },
+              p: 0,
+            }}
+          >
             BMW Generic DataGrid
           </Typography>
           <Box sx={{ flex: 1 }} />
@@ -57,7 +69,7 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
-      <Container sx={{ py: 1 , px: 1, mx: 3 }}>
+      <Container sx={{ py: { xs: 1, sm: 2 }, px: { xs: 1, sm: 2 }, mx: { xs: 0, sm: 3 } }}>
         <Routes>
           <Route path="/" element={<DataGridPage />} />
           <Route path="/data/:id" element={<DetailPage />} />

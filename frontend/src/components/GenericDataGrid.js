@@ -1,5 +1,5 @@
 // src/components/GenericDataGrid.jsx
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { ModuleRegistry, AllCommunityModule, InfiniteRowModelModule } from "ag-grid-community";
 import { SetFilterModule, MultiFilterModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
@@ -14,6 +14,23 @@ ModuleRegistry.registerModules([AllCommunityModule, InfiniteRowModelModule, SetF
 const containerStyle = { width: "100%", height: "360px" };
 
 // Helpers to map AG Grid filter model to API and back
+const normalizeFilters = (filters = []) => {
+	return [...filters].map((f) => {
+		if (!f) return f;
+		if (f.op === 'in') {
+			const values = Array.isArray(f.values) ? [...f.values].sort() : [];
+			return { ...f, values };
+		}
+		return { ...f };
+	})
+	.sort((a, b) => {
+		if (!a || !b) return 0;
+		if (a.field !== b.field) return String(a.field).localeCompare(String(b.field));
+		if (a.op !== b.op) return String(a.op).localeCompare(String(b.op));
+		return JSON.stringify(a.value ?? a.values ?? "").localeCompare(JSON.stringify(b.value ?? b.values ?? ""));
+	});
+};
+
 const mapFilterModelToApi = (filterModel) => {
 	const apiFilters = [];
 	if (!filterModel) return apiFilters;
@@ -47,7 +64,7 @@ const mapFilterModelToApi = (filterModel) => {
 			apiFilters.push({ field, op, value: fm.filter != null ? String(fm.filter) : undefined });
 		}
 	}
-	return apiFilters;
+	return normalizeFilters(apiFilters);
 };
 
 const apiFiltersToAgFilterModel = (apiFilters, types = {}) => {
@@ -88,8 +105,14 @@ const apiFiltersToAgFilterModel = (apiFilters, types = {}) => {
 				subModels.push({ filterType: t, type, ...(type !== 'blank' ? { filter: filterVal } : {}) });
 			}
 		}
-		if (subModels.length === 1) model[field] = subModels[0];
-		else if (subModels.length > 1) model[field] = { filterType: 'multi', filterModels: subModels };
+		if (subModels.length === 0) continue;
+		if (multiFilterFields.has(field)) {
+			model[field] = { filterType: 'multi', filterModels: subModels, operator: 'AND' };
+		} else if (subModels.length === 1) {
+			model[field] = subModels[0];
+		} else {
+			model[field] = { filterType: 'multi', filterModels: subModels };
+		}
 	}
 	return model;
 };
@@ -111,6 +134,7 @@ const columnTypes = {
 	PriceEuro: "number",
 	Date: "date",
 };
+const multiFilterFields = new Set(["Brand", "BodyStyle"]);
 
 export default function GenericDataGrid({
 	query,                 // { q, caseSensitive }
@@ -120,11 +144,44 @@ export default function GenericDataGrid({
 }) {
 	const gridRef = useRef(null);
 	const navigate = useNavigate();
+	const onTotalChangeRef = useRef(onTotalChange);
+	useEffect(() => { onTotalChangeRef.current = onTotalChange; }, [onTotalChange]);
+	const lastDatasourceRef = useRef(null);
+	const skipNextFilterChangedRef = useRef(false);
+	const normalizedExternalFilters = useMemo(() => normalizeFilters(externalFilters), [externalFilters]);
+	const externalFiltersKey = useMemo(() => JSON.stringify(normalizedExternalFilters), [normalizedExternalFilters]);
+	const notifyFiltersChanged = useCallback((filters) => {
+		const normalized = normalizeFilters(filters);
+		const key = JSON.stringify(normalized);
+		if (key === externalFiltersKey) return;
+		onFiltersChanged?.(normalized);
+	}, [externalFiltersKey, onFiltersChanged]);
 
 	const [columnDefs, setColumnDefs] = useState([]);
 	const [brandOptions, setBrandOptions] = useState([]);
 	const [bodyStyleOptions, setBodyStyleOptions] = useState([]);
 	const [confirm, setConfirm] = useState({ open: false, id: null, brand: "", model: "" });
+	const syncFilterInstances = useCallback((model) => {
+		const api = gridRef.current?.api;
+		if (!api || typeof api.getFilterInstance !== 'function') return;
+		const currentModel = api.getFilterModel?.() || {};
+		const fields = new Set([
+			...Object.keys(currentModel || {}),
+			...Object.keys(model || {}),
+		]);
+		fields.forEach((field) => {
+			api.getFilterInstance(field, (instance) => {
+				if (!instance || typeof instance.setModel !== 'function') return;
+				const nextModel = model?.[field] ?? null;
+				try {
+					instance.setModel(nextModel);
+				} catch {}
+				if (typeof instance.onParentModelChanged === 'function') {
+					instance.onParentModelChanged(nextModel);
+				}
+			});
+		});
+	}, []);
 
 	// Prefetch distinct for set filters
 	useEffect(() => {
@@ -148,7 +205,8 @@ export default function GenericDataGrid({
 		const datasource = useMemo(() => ({
 		getRows: async (params) => {
 			try {
-				gridRef.current?.api?.showLoadingOverlay();
+				const apiInstance = gridRef.current?.api;
+				apiInstance?.showLoadingOverlay();
 					const { startRow = 0, endRow = 0, sortModel = [], filterModel } = params;
 				const blockSize = Math.max(1, endRow - startRow) || 25;
 				const page = Math.floor(startRow / blockSize) + 1;
@@ -170,7 +228,7 @@ export default function GenericDataGrid({
 
 				const rows = Array.isArray(res.data) ? res.data : [];
 				const total = Number.isFinite(res.total) ? res.total : rows.length;
-				onTotalChange?.(total);
+				onTotalChangeRef.current?.(total);
 
 				if (!columnDefs.length && rows[0]) {
 					const first = rows[0];
@@ -203,8 +261,13 @@ export default function GenericDataGrid({
 								...(k === 'PriceEuro' ? {
 									valueFormatter: (p) => {
 										const raw = p.value ?? (p.data ? p.data[k] : undefined);
-										const num = Number(String(raw).replace(/[^0-9.-]/g, ''));
-										return isNaN(num) ? (raw ?? '') : num.toLocaleString();
+										// If nothing yet (loading or truly empty), show blank instead of 0
+										if (raw == null) return '';
+										const cleaned = String(raw).replace(/[^0-9.-]/g, '');
+										// guard against empty/invalid numeric strings like '', '.', '-', '-.'
+										if (!cleaned || cleaned === '.' || cleaned === '-' || cleaned === '-.') return String(raw) || '';
+										const num = Number(cleaned);
+										return Number.isFinite(num) ? num.toLocaleString() : (String(raw) || '');
 									}
 								} : {})
 							};
@@ -272,39 +335,41 @@ export default function GenericDataGrid({
 				if (typeof params.successCallback === 'function') params.successCallback(rows, total);
 				else if (typeof params.success === 'function') params.success({ rowData: rows, rowCount: total });
 
-				setTimeout(() => { gridRef.current?.api?.hideOverlay(); }, 300);
+				if (total === 0) apiInstance?.showNoRowsOverlay();
+				else apiInstance?.hideOverlay();
 			} catch (e) {
 				gridRef.current?.api?.showNoRowsOverlay();
 				if (typeof params.failCallback === 'function') params.failCallback();
 				else if (typeof params.fail === 'function') params.fail();
 			}
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}), [JSON.stringify(externalFilters), query?.q, query?.caseSensitive, brandOptions.length, bodyStyleOptions.length, columnDefs.length]);
+	}), [query?.q, query?.caseSensitive, brandOptions, bodyStyleOptions, columnDefs.length]);
 
 	// Apply datasource and react to changes
 	useEffect(() => {
 		const api = gridRef.current?.api;
 		if (!api || !datasource) return;
-		api.setGridOption('datasource', datasource);
-		api.purgeInfiniteCache();
+		if (lastDatasourceRef.current === datasource) return;
+		if (typeof api.setGridOption === 'function') api.setGridOption('datasource', datasource);
+		else if (typeof api.setDatasource === 'function') api.setDatasource(datasource);
+		lastDatasourceRef.current = datasource;
 	}, [datasource]);
 
-		// Keep grid filter model in sync when externalFilters change
+	// Keep grid filter model in sync when external filters change externally (chips, etc.)
 	useEffect(() => {
 		const api = gridRef.current?.api;
 		if (!api) return;
-			// Only update if different to avoid triggering an extra unfiltered fetch
-			const currentModel = api.getFilterModel() || {};
-			const nowApiFilters = mapFilterModelToApi(currentModel);
-			const a = JSON.stringify(nowApiFilters);
-			const b = JSON.stringify(externalFilters || []);
-			if (a !== b) {
-				const model = apiFiltersToAgFilterModel(externalFilters, columnTypes);
-				api.setFilterModel(model);
-				api.refreshInfiniteCache();
-			}
-	}, [JSON.stringify(externalFilters)]);
+		const currentModel = api.getFilterModel() || {};
+		const nowApiFilters = mapFilterModelToApi(currentModel);
+		if (JSON.stringify(nowApiFilters) === externalFiltersKey) return;
+		const model = apiFiltersToAgFilterModel(normalizedExternalFilters, columnTypes);
+		skipNextFilterChangedRef.current = true;
+		api.setFilterModel(model);
+		syncFilterInstances(model);
+		api.showLoadingOverlay();
+		if (typeof api.refreshInfiniteCache === 'function') api.refreshInfiniteCache();
+		else api.purgeInfiniteCache?.();
+		}, [externalFiltersKey, normalizedExternalFilters, syncFilterInstances]);
 
 	return (
 		<div style={containerStyle}>
@@ -316,30 +381,47 @@ export default function GenericDataGrid({
 				rowHeight={42}
 				rowModelType="infinite"
 				cacheBlockSize={25}
+				maxConcurrentDatasourceRequests={1}
+				blockLoadDebounceMillis={200}
 				maxBlocksInCache={10}
 				popupParent={typeof document !== 'undefined' ? document.body : undefined}
-				overlayLoadingTemplate={`<div class="ag-my-spinner"></div>`}
+				overlayLoadingTemplate={`<div class="ag-my-overlay" role="status" aria-live="polite"><div class="ag-my-spinner" aria-hidden="true"></div><div class="ag-my-label">Loading…</div></div>`}
 				overlayNoRowsTemplate={`<span class="ag-overlay-no-rows-center">No rows to show</span>`}
 				onFilterChanged={() => {
 					const model = gridRef.current?.api?.getFilterModel() || {};
 					const apiFilters = mapFilterModelToApi(model);
-					onFiltersChanged?.(apiFilters);
-							// For Infinite Row Model, purge cache so grid refetches with new filters
-							gridRef.current?.api?.purgeInfiniteCache();
+					if (skipNextFilterChangedRef.current) {
+						skipNextFilterChangedRef.current = false;
+						return;
+					}
+				notifyFiltersChanged(apiFilters);
+					gridRef.current?.api?.showLoadingOverlay();
+					const api = gridRef.current?.api;
+					if (typeof api?.refreshInfiniteCache === 'function') api.refreshInfiniteCache();
+					else api?.purgeInfiniteCache?.();
 				}}
 						onFilterModified={() => {
 							// Keep chips responsive while filter panel is open
 							const model = gridRef.current?.api?.getFilterModel() || {};
 							const apiFilters = mapFilterModelToApi(model);
-							onFiltersChanged?.(apiFilters);
+							notifyFiltersChanged(apiFilters);
 						}}
 				onSortChanged={() => {
-					// simply refresh cache on sort changes; sorting flags are read by datasource
-					gridRef.current?.api?.refreshInfiniteCache();
+					gridRef.current?.api?.showLoadingOverlay();
+					const api = gridRef.current?.api;
+					if (typeof api?.refreshInfiniteCache === 'function') api.refreshInfiniteCache();
+					else api?.purgeInfiniteCache?.();
 				}}
 				onGridReady={() => {
-					gridRef.current?.api?.setGridOption('datasource', datasource);
-					gridRef.current?.api?.showLoadingOverlay();
+				const api = gridRef.current?.api;
+				if (api && datasource) {
+					if (typeof api.setGridOption === 'function') api.setGridOption('datasource', datasource);
+					else if (typeof api.setDatasource === 'function') api.setDatasource(datasource);
+					lastDatasourceRef.current = datasource;
+				}
+				api?.showLoadingOverlay();
+				if (typeof api?.refreshInfiniteCache === 'function') api.refreshInfiniteCache();
+				else api?.purgeInfiniteCache?.();
 				}}
 			/>
 

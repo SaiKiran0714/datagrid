@@ -13,7 +13,7 @@ import GenericDataGrid from "../components/GenericDataGrid";
 export default function DataGridPage() {
   const [q, setQ] = useState();
   const [filters, setFilters] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(null);
   
   // Not needed here anymore: sorting/paging handled by GenericDataGrid
   // Case sensitivity toggle for search/filters (default OFF -> insensitive)
@@ -27,10 +27,10 @@ export default function DataGridPage() {
   // columns are determined within GenericDataGrid
 
   return (
-    <Box sx={{ width: '100%', height: '100%', p: 2 }}>
+    <Box sx={{ width: '100%', height: '100%', p: { xs: 1, sm: 2 } }}>
       {/* top row: search + toggle */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-        <Box sx={{ my: 2, width: 450, flexShrink: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 }, flexWrap: "wrap" }}>
+        <Box sx={{ my: { xs: 1, sm: 2 }, width: { xs: '100%', sm: 450 }, flexShrink: 0 }}>
           <SearchBar
             initialValue={q || ""}
             onSearch={(val) => {
@@ -59,7 +59,11 @@ export default function DataGridPage() {
         onTotalChange={(n) => setTotal(n)}
       />
 
-      <Box sx={{ mt: 1, fontSize: '14px', color: '#666' }}>Total Records: {total}</Box>
+      {total !== null && (
+        <Box sx={{ mt: { xs: 0.5, sm: 1 }, fontSize: '14px', color: '#666' }}>
+          Total Records: {total}
+        </Box>
+      )}
 
       {/* Delete dialog handled inside GenericDataGrid */}
     </Box>
