@@ -76,7 +76,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Distinct values for a field from JSON payload
+// Distinct values for a field from JSON payload eg. Brand names : [BMW, Audi, ...]
 router.get("/distinct", async (req, res) => {
   try {
     const field = String(req.query.field || "").trim();

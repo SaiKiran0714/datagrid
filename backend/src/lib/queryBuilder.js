@@ -4,15 +4,13 @@ const J = (k) => `JSON_UNQUOTE(JSON_EXTRACT(payload, '$.${k}'))`;
 
 // choose a CI collation available on your server
 const CI = "utf8mb4_0900_ai_ci";          // MySQL 8+
-const CI_FALLBACK = "utf8mb4_general_ci"; // MySQL 5.7
+// const CI_FALLBACK = "utf8mb4_general_ci"; // MySQL 5.7
 const CI_USE = CI; // or CI_FALLBACK if needed
 
 function fToSQL(f, vals) {
   if (!f || !f.field || !SAFE_FIELD.test(f.field)) return "";
   const col = J(f.field);
   const op = String(f.op || "").trim();
-
-
 
   switch (op) {
     case "contains":     vals.push(`%${f.value ?? ""}%`); return `CAST(${col} AS CHAR) COLLATE ${CI_USE} LIKE ?`;
@@ -23,13 +21,13 @@ function fToSQL(f, vals) {
     case "endsWith":     vals.push(`%${f.value ?? ""}`);  return `CAST(${col} AS CHAR) COLLATE ${CI_USE} LIKE ?`;
     case "isEmpty":                                      return `(${col} IS NULL OR ${col} = '')`;
     case "notEmpty":                                     return `NOT (${col} IS NULL OR ${col} = '')`;
-
+    
     case "gt":
     case "greaterThan":  vals.push(f.value ?? "0");       return `CAST(${col} AS DECIMAL(30,10)) > CAST(? AS DECIMAL(30,10))`;
     case "lt":
     case "lessThan":     vals.push(f.value ?? "0");       return `CAST(${col} AS DECIMAL(30,10)) < CAST(? AS DECIMAL(30,10))`;
-  case "ne":
-  case "notEqualsNumber": vals.push(f.value ?? "0");    return `CAST(${col} AS DECIMAL(30,10)) <> CAST(? AS DECIMAL(30,10))`;
+    case "ne":
+    case "notEqualsNumber": vals.push(f.value ?? "0");    return `CAST(${col} AS DECIMAL(30,10)) <> CAST(? AS DECIMAL(30,10))`;
 
     // multi-select list (text) -> IN (...)
     case "in": {
@@ -43,12 +41,6 @@ function fToSQL(f, vals) {
     default: return "";
   }
 }
-
-// fields to search for the global q (customize)
-const SEARCHABLE_FIELDS = [
-  "Brand","Model","PowerTrain","BodyStyle","Segment","PlugType","RapidCharge"
-  // add/remove as you like; can be all columns too
-];
 
   const NUMERIC_FIELDS = new Set([
   "AccelSec", "TopSpeed_KmH", "Range_Km", "Efficiency_WhKm", "FastCharge_KmH", "Seats", "PriceEuro"
@@ -99,9 +91,6 @@ export function buildQuery(p = {}) {
 
   // --- SORT ---
   const sortField = p.sortField && SAFE_FIELD.test(p.sortField) ? p.sortField : null;
-  // const sortSQL = sortField
-  //   ? `ORDER BY ${J(sortField)} ${p.sortOrder === "desc" ? "DESC" : "ASC"}`
-  //   : "";
 
   const DATE_FIELDS = new Set(["Date"]); // Add your date field names here
   const sortSQL = sortField
