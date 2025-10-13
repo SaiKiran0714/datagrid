@@ -198,16 +198,45 @@ export default function GenericDataGrid() {
 			...Object.keys(model || {}),
 		]);
 		fields.forEach((field) => {
-			api.getFilterInstance(field, (instance) => {
-				if (!instance || typeof instance.setModel !== 'function') return;
-				const nextModel = model?.[field] ?? null;
-				try {
+			const instance = api.getFilterInstance(field);
+			if (!instance || typeof instance.setModel !== 'function') return;
+			const nextModel = model?.[field] ?? null;
+			
+			try {
+				// For multi-filters, we need to set the model and update child filters
+				if (nextModel && nextModel.filterType === 'multi' && Array.isArray(nextModel.filterModels)) {
+					// Set the overall model first
 					instance.setModel(nextModel);
-				} catch {}
-				if (typeof instance.onParentModelChanged === 'function') {
-					instance.onParentModelChanged(nextModel);
+					
+					// For each child filter in the multi-filter, get and update it
+					const childInstances = instance.getChildFilterInstance ? 
+						nextModel.filterModels.map((_, idx) => instance.getChildFilterInstance(idx)) : [];
+					
+					childInstances.forEach((childInstance, idx) => {
+						if (childInstance && typeof childInstance.setModel === 'function') {
+							try {
+								childInstance.setModel(nextModel.filterModels[idx] || null);
+								// Refresh set filter values to update checkboxes
+								if (typeof childInstance.refreshFilterValues === 'function') {
+									childInstance.refreshFilterValues();
+								}
+							} catch (e) {
+								console.error('Error setting child filter model:', e);
+							}
+						}
+					});
+				} else {
+					// For simple filters, just set the model
+					instance.setModel(nextModel);
 				}
-			});
+				
+				// Apply the model changes
+				if (typeof instance.applyModel === 'function') {
+					instance.applyModel();
+				}
+			} catch (e) {
+				console.error('Error syncing filter instance:', e);
+			}
 		});
 	}, []);
 
@@ -367,14 +396,37 @@ export default function GenericDataGrid() {
 		const currentModel = api.getFilterModel() || {};
 		const nowApiFilters = mapFilterModelToApi(currentModel);
 		if (JSON.stringify(nowApiFilters) === externalFiltersKey) return;
+		
 		const model = apiFiltersToAgFilterModel(normalizedExternalFilters, columnTypes);
 		skipNextFilterChangedRef.current = true;
+		
+		// For fields that changed, destroy and recreate the filter to force UI update
+		const changedFields = new Set([
+			...Object.keys(currentModel || {}),
+			...Object.keys(model || {})
+		]);
+		
+		changedFields.forEach(field => {
+			if (JSON.stringify(currentModel[field]) !== JSON.stringify(model[field])) {
+				try {
+					api.destroyFilter(field);
+				} catch (e) {}
+			}
+		});
+		
+		// Set the new filter model
 		api.setFilterModel(model);
-		syncFilterInstances(model);
+		
+		// Reset skip flag after a brief delay
+		setTimeout(() => {
+			skipNextFilterChangedRef.current = false;
+		}, 100);
+		
+		// Refresh the grid data
 		api.showLoadingOverlay();
 		if (typeof api.refreshInfiniteCache === 'function') api.refreshInfiniteCache();
 		else api.purgeInfiniteCache?.();
-		}, [externalFiltersKey, normalizedExternalFilters, syncFilterInstances]);
+		}, [externalFiltersKey, normalizedExternalFilters]);
 
 	return (
 		<div style={containerStyle}>

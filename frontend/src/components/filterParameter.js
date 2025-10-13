@@ -61,31 +61,25 @@ export default function FilterParameter({ types = {} }) {
     <Box
       sx={{
         mt: { xs: 0.5, sm: 1 },
-        // keep height constant whether chips exist or not
+        mb: { xs: 1, sm: 1.5 },
+        // Allow height to grow with content
         minHeight: { xs: 40, sm: 48 },
-        maxHeight: { xs: 40, sm: 48 },
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: { xs: 0.5, sm: 1 },
         px: { xs: 0.5, sm: 1 },
         borderRadius: 1,
         // bgcolor: "background.paper",
-        overflow: "hidden",
       }}
     >
-      {/* Chips area with horizontal scroll if overflow */}
+      {/* Chips area with wrapping */}
       <Box
         sx={{
           flex: 1,
           display: "flex",
           alignItems: "center",
           gap: 0.5,
-          flexWrap: "nowrap",
-          overflowX: "auto",
-          overflowY: "hidden",
-          // hide scrollbar in WebKit while keeping scrollability
-          "&::-webkit-scrollbar": { height: 6 },
-          "&::-webkit-scrollbar-thumb": { bgcolor: "action.hover", borderRadius: 3 },
+          flexWrap: "wrap",
         }}
       >
         {searchTerm && (
