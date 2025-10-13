@@ -11,7 +11,7 @@ export const agGridTheme = themeQuartz
       foregroundColor: "#000000",
       browserColorScheme: "light",
     },
-    "light-grey",
+    "light-grey"
   )
   .withParams(
     {
@@ -20,7 +20,7 @@ export const agGridTheme = themeQuartz
       foregroundColor: "#ffffffcc",
       browserColorScheme: "dark",
     },
-    "dark-blue",
+    "dark-blue"
   );
 
 export function applyAgGridThemeMode(darkEnabled) {

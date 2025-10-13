@@ -1,5 +1,14 @@
 import { Routes, Route, Link } from "react-router-dom";
-import { AppBar, Toolbar, Typography, Container, CssBaseline, FormControlLabel, Switch, Box } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Container,
+  CssBaseline,
+  FormControlLabel,
+  Switch,
+  Box,
+} from "@mui/material";
 import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import NightlightRoundIcon from "@mui/icons-material/NightlightRound";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -15,32 +24,44 @@ export default function App() {
     try {
       const saved = localStorage.getItem("bm-dark-mode");
       return saved ? JSON.parse(saved) : false;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   });
 
   useEffect(() => {
-    try { localStorage.setItem("bm-dark-mode", JSON.stringify(darkMode)); } catch {}
+    try {
+      localStorage.setItem("bm-dark-mode", JSON.stringify(darkMode));
+    } catch (err) {
+      // Ignore localStorage errors
+    }
     applyAgGridThemeMode(darkMode);
   }, [darkMode]);
 
-  const theme = useMemo(() => createTheme({
-    palette: {
-      mode: darkMode ? "dark" : "light",
-      ...(darkMode ? {
-        background: {
-          default: "#0b1622", // deep dark blue for page background
-          paper: "#102437",   // slightly lighter dark blue for surfaces
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode: darkMode ? "dark" : "light",
+          ...(darkMode
+            ? {
+                background: {
+                  default: "#0b1622", // deep dark blue for page background
+                  paper: "#102437", // slightly lighter dark blue for surfaces
+                },
+                primary: { main: "#1976d2" },
+              }
+            : {
+                background: {
+                  default: "#f2f3f5", // light grey page background
+                  paper: "#f7f7f9", // slightly lighter for surfaces
+                },
+                text: { primary: "#000000" },
+              }),
         },
-        primary: { main: "#1976d2" },
-      } : {
-        background: {
-          default: "#f2f3f5", // light grey page background
-          paper: "#f7f7f9"   // slightly lighter for surfaces
-        },
-        text: { primary: "#000000" },
-      })
-    }
-  }), [darkMode]);
+      }),
+    [darkMode]
+  );
   return (
     <ErrorBoundary>
       <ThemeProvider theme={theme}>
@@ -53,7 +74,7 @@ export default function App() {
               variant="h6"
               sx={{
                 color: "inherit",
-                fontWeight: 'bold',
+                fontWeight: "bold",
                 textDecoration: "none",
                 my: { xs: 1, sm: 2 },
                 mx: { xs: 1, sm: 3 },
@@ -64,8 +85,16 @@ export default function App() {
             </Typography>
             <Box sx={{ flex: 1 }} />
             <FormControlLabel
-              control={<Switch checked={darkMode} onChange={(e)=> setDarkMode(e.target.checked)} />}
-              label={darkMode ? <NightlightRoundIcon fontSize="small" sx={{ position: 'relative', top: '2px' }} /> : <WbSunnyIcon fontSize="small" sx={{ position: 'relative', top: '2px' }} />}
+              control={
+                <Switch checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} />
+              }
+              label={
+                darkMode ? (
+                  <NightlightRoundIcon fontSize="small" sx={{ position: "relative", top: "2px" }} />
+                ) : (
+                  <WbSunnyIcon fontSize="small" sx={{ position: "relative", top: "2px" }} />
+                )
+              }
               labelPlacement="start"
               sx={{ ml: 1 }}
             />
@@ -78,10 +107,9 @@ export default function App() {
             <Route path="/data/:id" element={<DetailPage />} />
           </Routes>
         </Container>
-        
+
         <ErrorSnackbar />
       </ThemeProvider>
     </ErrorBoundary>
   );
 }
-

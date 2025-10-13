@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import { render } from "@testing-library/react";
+import App from "./App";
 
 // Mock axios to prevent ES module issues
-jest.mock('axios', () => ({
+jest.mock("axios", () => ({
   __esModule: true,
   default: {
     create: jest.fn(() => ({
@@ -19,11 +19,11 @@ jest.mock('axios', () => ({
 }));
 
 // Mock AG Grid to simplify testing
-jest.mock('ag-grid-react', () => ({
+jest.mock("ag-grid-react", () => ({
   AgGridReact: () => <div data-testid="ag-grid-mock">AG Grid</div>,
 }));
 
-test('renders app without crashing', () => {
+test("renders app without crashing", () => {
   render(<App />);
   // Just verify the app renders without throwing
   expect(document.body).toBeInTheDocument();

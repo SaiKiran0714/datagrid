@@ -8,7 +8,7 @@ export default function FilterParameter({ types = {} }) {
   const onChange = useGridStore((state) => state.setFilters);
   const searchTerm = useGridStore((state) => state.q);
   const onClearSearch = useGridStore((state) => state.clearSearch);
-  
+
   const inferType = (name) => types[name] || "text";
 
   const removeAt = (i) => {
@@ -122,7 +122,12 @@ export default function FilterParameter({ types = {} }) {
       </Box>
 
       {/* Single clear-all button pinned to the right within same container */}
-      <Button size="small" onClick={clearAll} disabled={value.length === 0} sx={{ minWidth: { xs: 64, sm: 80 }, px: { xs: 1, sm: 1.5 } }}>
+      <Button
+        size="small"
+        onClick={clearAll}
+        disabled={value.length === 0}
+        sx={{ minWidth: { xs: 64, sm: 80 }, px: { xs: 1, sm: 1.5 } }}
+      >
         Clear all
       </Button>
     </Box>

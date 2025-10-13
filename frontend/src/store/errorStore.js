@@ -1,5 +1,5 @@
 // Global error notification system using Zustand
-import { create } from 'zustand';
+import { create } from "zustand";
 
 const useErrorStore = create((set) => ({
   error: null,

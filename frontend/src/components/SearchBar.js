@@ -8,7 +8,7 @@ export default function SearchBar() {
   // Read/write from Zustand store
   const initialValue = useGridStore((state) => state.q) || "";
   const onSearch = useGridStore((state) => state.setQ);
-  
+
   const [term, setTerm] = useState(initialValue);
 
   // keep local state in sync if store updates from elsewhere
@@ -49,12 +49,7 @@ export default function SearchBar() {
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton
-                size="small"
-                edge="end"
-                aria-label="search"
-                onClick={doSearch}
-              >
+              <IconButton size="small" edge="end" aria-label="search" onClick={doSearch}>
                 <SearchIcon fontSize="small" />
               </IconButton>
               <IconButton

@@ -10,10 +10,10 @@ export default function DataGridPage() {
   const showing = useGridStore((state) => state.showing);
 
   return (
-    <Box sx={{ width: '100%', height: '100%', p: { xs: 1, sm: 2 } }}>
+    <Box sx={{ width: "100%", height: "100%", p: { xs: 1, sm: 2 } }}>
       {/* top row: search */}
       <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 }, flexWrap: "wrap" }}>
-        <Box sx={{ my: { xs: 1, sm: 2 }, width: { xs: '100%', sm: 450 }, flexShrink: 0 }}>
+        <Box sx={{ my: { xs: 1, sm: 2 }, width: { xs: "100%", sm: 450 }, flexShrink: 0 }}>
           <SearchBar />
         </Box>
       </Box>
@@ -24,7 +24,17 @@ export default function DataGridPage() {
       <GenericDataGrid />
 
       {total !== null && (
-        <Box sx={{ mt: { xs: 0.5, sm: 1 }, fontSize: '14px', color: '#666', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+        <Box
+          sx={{
+            mt: { xs: 0.5, sm: 1 },
+            fontSize: "14px",
+            color: "#666",
+            display: "flex",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 1,
+          }}
+        >
           <span>Total Records: {total}</span>
           <span>Showing: {showing || 25}</span>
         </Box>
