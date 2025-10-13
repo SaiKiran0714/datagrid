@@ -31,8 +31,3 @@
 	-ms-user-select: text;
 	user-select: text;
 }
-
-/* Ensure AG Grid popups (filters, menus, rich selects) appear above scrollbars */
-.ag-popup, .ag-popup-editor, .ag-menu, .ag-rich-select, .ag-filter-wrapper {
-	z-index: 10010 !important;
-}
