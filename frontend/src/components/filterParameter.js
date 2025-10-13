@@ -1,13 +1,14 @@
 // Minimal filter summary with chips and clear-all button
 import { Box, Button, Chip } from "@mui/material";
+import useGridStore from "../store/gridStore";
 
-export default function FilterParameter({
-  value = [],
-  onChange = () => {},
-  types = {},
-  searchTerm,
-  onClearSearch,
-}) {
+export default function FilterParameter({ types = {} }) {
+  // Read/write directly from Zustand store
+  const value = useGridStore((state) => state.filters);
+  const onChange = useGridStore((state) => state.setFilters);
+  const searchTerm = useGridStore((state) => state.q);
+  const onClearSearch = useGridStore((state) => state.clearSearch);
+  
   const inferType = (name) => types[name] || "text";
 
   const removeAt = (i) => {

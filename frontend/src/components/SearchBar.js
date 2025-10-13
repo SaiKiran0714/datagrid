@@ -2,11 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Box, TextField, InputAdornment, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
+import useGridStore from "../store/gridStore";
 
-export default function SearchBar({ initialValue = "", onSearch }) {
+export default function SearchBar() {
+  // Read/write from Zustand store
+  const initialValue = useGridStore((state) => state.q) || "";
+  const onSearch = useGridStore((state) => state.setQ);
+  
   const [term, setTerm] = useState(initialValue);
 
-  // keep local state in sync if parent updates initialValue
+  // keep local state in sync if store updates from elsewhere
   useEffect(() => {
     setTerm(initialValue);
   }, [initialValue]);

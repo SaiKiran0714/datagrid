@@ -4,10 +4,12 @@ import { ModuleRegistry, AllCommunityModule, InfiniteRowModelModule } from "ag-g
 import { SetFilterModule, MultiFilterModule } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import { agGridTheme } from "../theme/agGridTheme";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { getData, deleteRecord, getDistinct } from "../lib/api";
+import useGridStore from "../store/gridStore";
 
 ModuleRegistry.registerModules([AllCommunityModule, InfiniteRowModelModule, SetFilterModule, MultiFilterModule]);
 
@@ -136,16 +138,17 @@ const columnTypes = {
 };
 const multiFilterFields = new Set(["Brand", "BodyStyle"]);
 
-export default function GenericDataGrid({
-	query,                 // { q, caseSensitive }
-	externalFilters = [],  // API-style filters array
-	onFiltersChanged,      // (apiFilters) => void
-	onTotalChange,         // (total) => void
-}) {
+export default function GenericDataGrid() {
+	// Read from Zustand store instead of props
+	const q = useGridStore((state) => state.q);
+	const caseSensitive = useGridStore((state) => state.caseSensitive);
+	const externalFilters = useGridStore((state) => state.filters);
+	const setFilters = useGridStore((state) => state.setFilters);
+	const setTotal = useGridStore((state) => state.setTotal);
+	
 	const gridRef = useRef(null);
 	const navigate = useNavigate();
-	const onTotalChangeRef = useRef(onTotalChange);
-	useEffect(() => { onTotalChangeRef.current = onTotalChange; }, [onTotalChange]);
+	const queryClient = useQueryClient();
 	const lastDatasourceRef = useRef(null);
 	const skipNextFilterChangedRef = useRef(false);
 	const normalizedExternalFilters = useMemo(() => normalizeFilters(externalFilters), [externalFilters]);
@@ -154,13 +157,38 @@ export default function GenericDataGrid({
 		const normalized = normalizeFilters(filters);
 		const key = JSON.stringify(normalized);
 		if (key === externalFiltersKey) return;
-		onFiltersChanged?.(normalized);
-	}, [externalFiltersKey, onFiltersChanged]);
+		setFilters(normalized);
+	}, [externalFiltersKey, setFilters]);
 
 	const [columnDefs, setColumnDefs] = useState([]);
-	const [brandOptions, setBrandOptions] = useState([]);
-	const [bodyStyleOptions, setBodyStyleOptions] = useState([]);
 	const [confirm, setConfirm] = useState({ open: false, id: null, brand: "", model: "" });
+
+	// Delete mutation with cache invalidation
+	const deleteMutation = useMutation({
+		mutationFn: (id) => deleteRecord(id),
+		onSuccess: () => {
+			// Invalidate distinct value caches in case the deleted record affected them
+			queryClient.invalidateQueries({ queryKey: ['distinct'] });
+			// Refresh the grid
+			gridRef.current?.api?.refreshInfiniteCache();
+		},
+	});
+
+	// Prefetch distinct values using React Query - cached for 10 minutes
+	const { data: brandOptions = [] } = useQuery({
+		queryKey: ['distinct', 'Brand'],
+		queryFn: () => getDistinct('Brand'),
+		staleTime: 10 * 60 * 1000, // 10 minutes
+		select: (data) => Array.isArray(data) ? data : [],
+	});
+
+	const { data: bodyStyleOptions = [] } = useQuery({
+		queryKey: ['distinct', 'BodyStyle'],
+		queryFn: () => getDistinct('BodyStyle'),
+		staleTime: 10 * 60 * 1000, // 10 minutes
+		select: (data) => Array.isArray(data) ? data : [],
+	});
+
 	const syncFilterInstances = useCallback((model) => {
 		const api = gridRef.current?.api;
 		if (!api || typeof api.getFilterInstance !== 'function') return;
@@ -183,24 +211,6 @@ export default function GenericDataGrid({
 		});
 	}, []);
 
-	// Prefetch distinct for set filters
-	useEffect(() => {
-		let mounted = true;
-		(async () => {
-			try {
-				const [brands, bodies] = await Promise.all([
-					getDistinct('Brand').catch(() => []),
-					getDistinct('BodyStyle').catch(() => []),
-				]);
-				if (mounted) {
-					setBrandOptions(Array.isArray(brands) ? brands : []);
-					setBodyStyleOptions(Array.isArray(bodies) ? bodies : []);
-				}
-			} catch {}
-		})();
-		return () => { mounted = false; };
-	}, []);
-
 	// Build datasource
 		const datasource = useMemo(() => ({
 		getRows: async (params) => {
@@ -217,8 +227,8 @@ export default function GenericDataGrid({
 					const liveModel = gridRef.current?.api?.getFilterModel?.() || filterModel || {};
 					const gridFilters = mapFilterModelToApi(liveModel);
 				const res = await getData({
-					q: query?.q,
-					caseSensitive: !!query?.caseSensitive,
+					q,
+					caseSensitive: !!caseSensitive,
 						filters: JSON.stringify(gridFilters),
 					page,
 					pageSize: blockSize,
@@ -228,7 +238,7 @@ export default function GenericDataGrid({
 
 				const rows = Array.isArray(res.data) ? res.data : [];
 				const total = Number.isFinite(res.total) ? res.total : rows.length;
-				onTotalChangeRef.current?.(total);
+				setTotal(total);
 
 				if (!columnDefs.length && rows[0]) {
 					const first = rows[0];
@@ -343,7 +353,7 @@ export default function GenericDataGrid({
 				else if (typeof params.fail === 'function') params.fail();
 			}
 		}
-	}), [query?.q, query?.caseSensitive, brandOptions, bodyStyleOptions, columnDefs.length]);
+	}), [q, caseSensitive, brandOptions, bodyStyleOptions, columnDefs.length, setTotal, navigate]);
 
 	// Apply datasource and react to changes
 	useEffect(() => {
@@ -436,12 +446,19 @@ export default function GenericDataGrid({
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={() => setConfirm((c) => ({ ...c, open: false }))}>Cancel</Button>
-					<Button color="error" variant="contained" onClick={async () => {
-						await deleteRecord(confirm.id);
-						setConfirm((c) => ({ ...c, open: false }));
-						gridRef.current?.api?.refreshInfiniteCache();
-					}}>
-						Delete
+					<Button 
+						color="error" 
+						variant="contained" 
+						disabled={deleteMutation.isPending}
+						onClick={() => {
+							deleteMutation.mutate(confirm.id, {
+								onSuccess: () => {
+									setConfirm((c) => ({ ...c, open: false }));
+								},
+							});
+						}}
+					>
+						{deleteMutation.isPending ? "Deleting..." : "Delete"}
 					</Button>
 				</DialogActions>
 			</Dialog>

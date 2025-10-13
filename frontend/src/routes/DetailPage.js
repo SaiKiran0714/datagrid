@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { getRecord } from "../lib/api";
 import {
-  Box, Button, Chip, CircularProgress, Divider, Grid, Paper, Stack, Tooltip,
-  Typography, Card, CardContent, IconButton, Accordion, AccordionSummary, AccordionDetails
+  Box, Button, Chip, CircularProgress, Divider, Paper, Stack, Tooltip,
+  Typography, IconButton, Accordion, AccordionSummary, AccordionDetails
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -12,7 +13,6 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const fmtInt = (v) => (v == null || v === "-" ? "—" : Number(v).toLocaleString());
-const fmtNum = (v, d = 1) => (v == null || v === "-" ? "—" : Number(v).toFixed(d));
 const fmtEUR = (v) => (v == null || v === "-" ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(v)));
 const yesNoChip = (val) =>
   val === "Yes" || val === true ? (
@@ -24,17 +24,14 @@ const yesNoChip = (val) =>
 export default function DetailPage() {
   const { id } = useParams();
   const nav = useNavigate();
-  const [record, setRecord] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const data = await getRecord(id);
-      setRecord(data);
-      setLoading(false);
-    })();
-  }, [id]);
+  // Fetch record with React Query - cached for 5 minutes
+  const { data: record, isLoading: loading, isError } = useQuery({
+    queryKey: ['record', id],
+    queryFn: () => getRecord(id),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!id, // Only fetch if id exists
+  });
 
   const title = useMemo(() => {
     if (!record) return "";
@@ -51,7 +48,7 @@ export default function DetailPage() {
     );
   }
 
-  if (!record) {
+  if (!record || isError) {
     return (
       <Stack gap={2}>
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => nav(-1)}>

@@ -1,5 +1,5 @@
 import { Routes, Route, Link } from "react-router-dom";
-import { AppBar, Toolbar, Typography, Container, CssBaseline, FormControlLabel, Switch, Box, Stack } from "@mui/material";
+import { AppBar, Toolbar, Typography, Container, CssBaseline, FormControlLabel, Switch, Box } from "@mui/material";
 import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import NightlightRoundIcon from "@mui/icons-material/NightlightRound";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
