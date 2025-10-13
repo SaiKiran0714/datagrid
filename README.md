@@ -41,4 +41,5 @@ If API URL is different, set `REACT_APP_API_URL` in `frontend/.env`.
 - Brand and BodyStyle filters have value lists (eg. Brand shows options such as [BMW, Audi....] and Body Style shows [SUV, Hatchback....] )
 - You can copy text from grid cells
 - instead of regular pagination implemented Infinite scroll to the Grid.
+- used Zustand for state management (for centralising search queries, filters and case senitivity and eliminating prop drilling)
 
