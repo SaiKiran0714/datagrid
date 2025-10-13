@@ -5,6 +5,8 @@ import NightlightRoundIcon from "@mui/icons-material/NightlightRound";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import DataGridPage from "./routes/DataGridPage";
 import DetailPage from "./routes/DetailPage";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorSnackbar from "./components/ErrorSnackbar";
 import { useEffect, useMemo, useState } from "react";
 import { applyAgGridThemeMode } from "./theme/agGridTheme";
 
@@ -40,41 +42,46 @@ export default function App() {
     }
   }), [darkMode]);
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AppBar position="static" color="default">
-        <Toolbar>
-          <Typography
-            component={Link}
-            to="/"
-            variant="h6"
-            sx={{
-              color: "inherit",
-              fontWeight: 'bold',
-              textDecoration: "none",
-              my: { xs: 1, sm: 2 },
-              mx: { xs: 1, sm: 3 },
-              p: 0,
-            }}
-          >
-            BMW Generic DataGrid
-          </Typography>
-          <Box sx={{ flex: 1 }} />
-          <FormControlLabel
-            control={<Switch checked={darkMode} onChange={(e)=> setDarkMode(e.target.checked)} />}
-            label={darkMode ? <NightlightRoundIcon fontSize="small" sx={{ position: 'relative', top: '2px' }} /> : <WbSunnyIcon fontSize="small" sx={{ position: 'relative', top: '2px' }} />}
-            labelPlacement="start"
-            sx={{ ml: 1 }}
-          />
-        </Toolbar>
-      </AppBar>
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AppBar position="static" color="default">
+          <Toolbar>
+            <Typography
+              component={Link}
+              to="/"
+              variant="h6"
+              sx={{
+                color: "inherit",
+                fontWeight: 'bold',
+                textDecoration: "none",
+                my: { xs: 1, sm: 2 },
+                mx: { xs: 1, sm: 3 },
+                p: 0,
+              }}
+            >
+              BMW Generic DataGrid
+            </Typography>
+            <Box sx={{ flex: 1 }} />
+            <FormControlLabel
+              control={<Switch checked={darkMode} onChange={(e)=> setDarkMode(e.target.checked)} />}
+              label={darkMode ? <NightlightRoundIcon fontSize="small" sx={{ position: 'relative', top: '2px' }} /> : <WbSunnyIcon fontSize="small" sx={{ position: 'relative', top: '2px' }} />}
+              labelPlacement="start"
+              sx={{ ml: 1 }}
+            />
+          </Toolbar>
+        </AppBar>
 
-      <Container sx={{ py: { xs: 1, sm: 2 }, px: { xs: 1, sm: 2 }, mx: { xs: 0, sm: 3 } }}>
-        <Routes>
-          <Route path="/" element={<DataGridPage />} />
-          <Route path="/data/:id" element={<DetailPage />} />
-        </Routes>
-      </Container>
-    </ThemeProvider>
+        <Container sx={{ py: { xs: 1, sm: 2 }, px: { xs: 1, sm: 2 }, mx: { xs: 0, sm: 3 } }}>
+          <Routes>
+            <Route path="/" element={<DataGridPage />} />
+            <Route path="/data/:id" element={<DetailPage />} />
+          </Routes>
+        </Container>
+        
+        <ErrorSnackbar />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
+

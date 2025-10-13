@@ -82,28 +82,6 @@ export default function DetailPage() {
         </Stack>
       </Paper>
 
-      {/* Key metrics cards */}
-      {/* <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={4}>
-          <MetricCard label="Range" value={`${fmtInt(record.Range_Km)} km`} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <MetricCard label="Efficiency" value={`${fmtInt(record.Efficiency_WhKm)} Wh/km`} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <MetricCard label="0–100 km/h" value={`${fmtNum(record.AccelSec, 1)} s`} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <MetricCard label="Top Speed" value={`${fmtInt(record.TopSpeed_KmH)} km/h`} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <MetricCard label="Fast Charge" value={`${fmtInt(record.FastCharge_KmH)} km/h`} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <MetricCard label="Rapid Charge" value={yesNoChip(record.RapidCharge)} />
-        </Grid>
-      </Grid> */}
-
       {/* Spec groups */}
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Vehicle</Typography>
@@ -149,21 +127,6 @@ export default function DetailPage() {
     </Stack>
   );
 }
-
-// /* ---- tiny presentational helpers ---- */
-
-// function MetricCard({ label, value }) {
-//   return (
-//     <Card variant="outlined" sx={{ height: "100%" }}>
-//       <CardContent>
-//         <Typography variant="overline" color="text.secondary">{label}</Typography>
-//         <Typography variant="h6" sx={{ mt: 0.5 }}>
-//           {typeof value === "string" ? value : value /* allow chips */}
-//         </Typography>
-//       </CardContent>
-//     </Card>
-//   );
-// }
 
 function SpecRow({ k, v }) {
   return (

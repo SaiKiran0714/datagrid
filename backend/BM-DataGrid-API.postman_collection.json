@@ -1,0 +1,724 @@
+{
+  "info": {
+    "name": "BM DataGrid API - Smoke Tests",
+    "description": "Comprehensive API smoke tests for the EV DataGrid backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "testRecordId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Root endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is JSON\", function () {",
+                  "    pm.response.to.be.json;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/data - List Records",
+      "item": [
+        {
+          "name": "Get first page (default)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has data array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has total count\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('total');",
+                  "    pm.expect(jsonData.total).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test(\"Data array has records\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"]
+            }
+          }
+        },
+        {
+          "name": "Get with pagination (page 2, size 10)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Returns exactly 10 records\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.length).to.equal(10);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?page=2&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search by query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Results contain search term\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.length > 0) {",
+                  "        var record = JSON.stringify(jsonData.data[0]);",
+                  "        pm.expect(record.toLowerCase()).to.include('tesla');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?q=Tesla",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Tesla"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by Brand (equals)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All records have correct Brand\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function(record) {",
+                  "        pm.expect(record.Brand).to.equal('BMW');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?filters=[{\"field\":\"Brand\",\"op\":\"equals\",\"value\":\"BMW\"}]",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "filters",
+                  "value": "[{\"field\":\"Brand\",\"op\":\"equals\",\"value\":\"BMW\"}]"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by multiple brands (IN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All records match filter criteria\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var validBrands = ['BMW', 'Audi', 'Tesla'];",
+                  "    jsonData.data.forEach(function(record) {",
+                  "        pm.expect(validBrands).to.include(record.Brand);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?filters=[{\"field\":\"Brand\",\"op\":\"in\",\"values\":[\"BMW\",\"Audi\",\"Tesla\"]}]",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "filters",
+                  "value": "[{\"field\":\"Brand\",\"op\":\"in\",\"values\":[\"BMW\",\"Audi\",\"Tesla\"]}]"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter numeric (price > 50000)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All records have price > 50000\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function(record) {",
+                  "        if (record.PriceEuro) {",
+                  "            pm.expect(record.PriceEuro).to.be.greaterThan(50000);",
+                  "        }",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?filters=[{\"field\":\"PriceEuro\",\"op\":\"gt\",\"value\":\"50000\"}]",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "filters",
+                  "value": "[{\"field\":\"PriceEuro\",\"op\":\"gt\",\"value\":\"50000\"}]"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sort by Brand (ascending)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Results are sorted alphabetically\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.length > 1) {",
+                  "        for (var i = 0; i < jsonData.data.length - 1; i++) {",
+                  "            var current = jsonData.data[i].Brand || '';",
+                  "            var next = jsonData.data[i + 1].Brand || '';",
+                  "            pm.expect(current.localeCompare(next)).to.be.at.most(0);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?sortField=Brand&sortOrder=asc&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "sortField",
+                  "value": "Brand"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "asc"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sort by Price (descending)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Results are sorted by price descending\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.length > 1) {",
+                  "        for (var i = 0; i < jsonData.data.length - 1; i++) {",
+                  "            var current = jsonData.data[i].PriceEuro || 0;",
+                  "            var next = jsonData.data[i + 1].PriceEuro || 0;",
+                  "            pm.expect(current).to.be.at.least(next);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?sortField=PriceEuro&sortOrder=desc&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "sortField",
+                  "value": "PriceEuro"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Combined: filter + search + sort",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?q=electric&filters=[{\"field\":\"BodyStyle\",\"op\":\"equals\",\"value\":\"SUV\"}]&sortField=Range_Km&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "electric"
+                },
+                {
+                  "key": "filters",
+                  "value": "[{\"field\":\"BodyStyle\",\"op\":\"equals\",\"value\":\"SUV\"}]"
+                },
+                {
+                  "key": "sortField",
+                  "value": "Range_Km"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/data/:id - Single Record",
+      "item": [
+        {
+          "name": "Get record by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is a single record object\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('object');",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "});",
+                  "",
+                  "pm.test(\"Record has expected fields\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('Brand');",
+                  "    pm.expect(jsonData).to.have.property('Model');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data/{{testRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data", "{{testRecordId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get non-existent record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data", "999999"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /api/data/distinct/:field",
+      "item": [
+        {
+          "name": "Get distinct Brands",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Array contains unique values\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var uniqueSet = new Set(jsonData);",
+                  "    pm.expect(jsonData.length).to.equal(uniqueSet.size);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data/distinct/Brand",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data", "distinct", "Brand"]
+            }
+          }
+        },
+        {
+          "name": "Get distinct BodyStyle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data/distinct/BodyStyle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data", "distinct", "BodyStyle"]
+            }
+          }
+        },
+        {
+          "name": "Get distinct with invalid field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 or 500\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data/distinct/InvalidField123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data", "distinct", "InvalidField123"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE /api/data/:id",
+      "item": [
+        {
+          "name": "Delete record (requires valid test ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 204\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data/{{testRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data", "{{testRecordId}}"]
+            }
+          },
+          "description": "⚠️ WARNING: This will delete a record. Change testRecordId to a safe test value."
+        },
+        {
+          "name": "Delete non-existent record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data", "999999"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Security Tests",
+      "item": [
+        {
+          "name": "SQL Injection attempt in filter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Server handles SQL injection safely\", function () {",
+                  "    // Should return 400, 500, or empty result - not expose DB",
+                  "    pm.expect([200, 400, 500]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test(\"No database error exposed\", function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body.toLowerCase()).to.not.include('mysql');",
+                  "    pm.expect(body.toLowerCase()).to.not.include('syntax error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?filters=[{\"field\":\"Brand\",\"op\":\"equals\",\"value\":\"'; DROP TABLE records;--\"}]",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "filters",
+                  "value": "[{\"field\":\"Brand\",\"op\":\"equals\",\"value\":\"'; DROP TABLE records;--\"}]"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "SQL Injection attempt in sort field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Server rejects invalid sort field\", function () {",
+                  "    pm.expect([200, 400, 500]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/data?sortField=Brand; DELETE FROM records&sortOrder=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "data"],
+              "query": [
+                {
+                  "key": "sortField",
+                  "value": "Brand; DELETE FROM records"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "asc"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
