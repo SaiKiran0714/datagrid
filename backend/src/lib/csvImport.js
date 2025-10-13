@@ -2,7 +2,7 @@ import fs from "fs";
 import { parse } from "csv-parse";
 import { pool } from "./db.js";
 
-// Usage: node src/lib/csvImport.js ./data/sample.csv
+// Usage: node backend/src/lib/csvImport.js ../data.csv
 const file = process.argv[2];
 if(!file){ console.error("CSV file path is required"); process.exit(1); }
 
