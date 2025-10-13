@@ -141,10 +141,10 @@ const multiFilterFields = new Set(["Brand", "BodyStyle"]);
 export default function GenericDataGrid() {
 	// Read from Zustand store instead of props
 	const q = useGridStore((state) => state.q);
-	const caseSensitive = useGridStore((state) => state.caseSensitive);
 	const externalFilters = useGridStore((state) => state.filters);
 	const setFilters = useGridStore((state) => state.setFilters);
 	const setTotal = useGridStore((state) => state.setTotal);
+	const setShowing = useGridStore((state) => state.setShowing);
 	
 	const gridRef = useRef(null);
 	const navigate = useNavigate();
@@ -226,20 +226,17 @@ export default function GenericDataGrid() {
 					// Always read the live grid filter model to avoid races
 					const liveModel = gridRef.current?.api?.getFilterModel?.() || filterModel || {};
 					const gridFilters = mapFilterModelToApi(liveModel);
-				const res = await getData({
-					q,
-					caseSensitive: !!caseSensitive,
-						filters: JSON.stringify(gridFilters),
-					page,
-					pageSize: blockSize,
-					sortField,
-					sortOrder,
-				});
-
-				const rows = Array.isArray(res.data) ? res.data : [];
+			const res = await getData({
+				q,
+				filters: JSON.stringify(gridFilters),
+				page,
+				pageSize: blockSize,
+				sortField,
+				sortOrder,
+			});				const rows = Array.isArray(res.data) ? res.data : [];
 				const total = Number.isFinite(res.total) ? res.total : rows.length;
 				setTotal(total);
-
+                setShowing(startRow + rows.length);
 				if (!columnDefs.length && rows[0]) {
 					const first = rows[0];
 					const keys = Object.keys(first).filter(k => k !== 'id');
@@ -347,15 +344,13 @@ export default function GenericDataGrid() {
 
 				if (total === 0) apiInstance?.showNoRowsOverlay();
 				else apiInstance?.hideOverlay();
-			} catch (e) {
-				gridRef.current?.api?.showNoRowsOverlay();
-				if (typeof params.failCallback === 'function') params.failCallback();
-				else if (typeof params.fail === 'function') params.fail();
-			}
+		} catch (e) {
+			gridRef.current?.api?.showNoRowsOverlay();
+			if (typeof params.failCallback === 'function') params.failCallback();
+			else if (typeof params.fail === 'function') params.fail();
 		}
-	}), [q, caseSensitive, brandOptions, bodyStyleOptions, columnDefs.length, setTotal, navigate]);
-
-	// Apply datasource and react to changes
+	}
+}), [q, brandOptions, bodyStyleOptions, columnDefs.length, setTotal, navigate]);	// Apply datasource and react to changes
 	useEffect(() => {
 		const api = gridRef.current?.api;
 		if (!api || !datasource) return;

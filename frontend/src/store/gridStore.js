@@ -8,7 +8,6 @@ const useGridStore = create(
     (set) => ({
       // Search
       q: undefined,
-      caseSensitive: false,
       
       // Filters (API format: [{field, op, value/values}])
       filters: [],
@@ -16,11 +15,14 @@ const useGridStore = create(
       // Total records count
       total: null,
       
+      // Currently showing records count
+      showing: 0,
+      
       // Actions
       setQ: (q) => set({ q }),
-      setCaseSensitive: (caseSensitive) => set({ caseSensitive }),
       setFilters: (filters) => set({ filters }),
       setTotal: (total) => set({ total }),
+      setShowing: (showing) => set({ showing }),
       
       // Convenience: clear search
       clearSearch: () => set({ q: undefined }),
@@ -29,7 +31,7 @@ const useGridStore = create(
       clearAllFilters: () => set({ filters: [] }),
       
       // Reset everything
-      reset: () => set({ q: undefined, caseSensitive: false, filters: [], total: null }),
+      reset: () => set({ q: undefined, filters: [], total: null, showing: 0 }),
     }),
     { name: 'GridStore' } // DevTools name
   )
