@@ -130,7 +130,7 @@ export default function DetailPage() {
           <Typography>Raw JSON</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Paper variant="outlined" sx={{ p: 2, position: "relative", bgcolor: "grey.50" }}>
+          <Paper variant="outlined" sx={{ p: 2, position: "relative", bgcolor: "background.default" }}>
             <Tooltip title="Copy JSON">
               <IconButton
                 size="small"
